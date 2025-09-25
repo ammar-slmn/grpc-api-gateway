@@ -1,20 +1,19 @@
 package loadbalancer
 
 import (
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strconv"
-)
-
-var (
-	baseURL = "http://localhost:808"
+	"sync"
 )
 
 type LoadBalancer struct {
 	ReverseProxy httputil.ReverseProxy
+	mu           sync.Mutex
+	baseURL      string
 }
+
 type Endpoints struct {
 	List []*url.URL
 }
@@ -25,31 +24,29 @@ func (e *Endpoints) Shuffle() {
 	e.List = append(e.List, temp)
 }
 
-func MakeLoadBalancer(amount int) {
-	// Instantiate Objects
-	var lb LoadBalancer
-	var ep Endpoints
-
-	// Server + Router
-	router := http.NewServeMux()
-	server := http.Server{
-		Addr:    ":8090",
-		Handler: router,
+func NewLoadBalancer(amount int, baseURL string) (*LoadBalancer, *Endpoints) {
+	if baseURL == "" {
+		baseURL = "http://localhost:808"
 	}
+
+	lb := &LoadBalancer{
+		baseURL: baseURL,
+	}
+	ep := &Endpoints{}
 
 	for i := 0; i < amount; i++ {
 		ep.List = append(ep.List, createEndpoint(baseURL, i))
 	}
 
-	// HandlerFunctions
-	router.HandleFunc("/loadBalancer", makeRequest(&lb, &ep))
-
-	log.Fatal(server.ListenAndServe())
+	return lb, ep
 }
 
-func makeRequest(lb *LoadBalancer, ep *Endpoints) func(w http.ResponseWriter, r *http.Request) {
+func MakeHandler(lb *LoadBalancer, ep *Endpoints) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		for !testServer(ep.List[0].String()) {
+		lb.mu.Lock()
+		defer lb.mu.Unlock()
+
+		for !checkServerHealth(ep.List[0].String()) {
 			ep.Shuffle()
 		}
 		lb.ReverseProxy = *httputil.NewSingleHostReverseProxy(ep.List[0])
@@ -60,19 +57,18 @@ func makeRequest(lb *LoadBalancer, ep *Endpoints) func(w http.ResponseWriter, r 
 
 func createEndpoint(endpoint string, idx int) *url.URL {
 	link := endpoint + strconv.Itoa(idx)
-	url, _ := url.Parse(link)
+	url, err := url.Parse(link)
+	if err != nil {
+		return nil
+	}
 	return url
 }
 
-func testServer(endpoint string) bool {
+func checkServerHealth(endpoint string) bool {
 	resp, err := http.Get(endpoint)
 	if err != nil {
 		return false
 	}
-
-	if resp.StatusCode != http.StatusOK {
-		return false
-	}
-
-	return true
+	defer resp.Body.Close()
+	return resp.StatusCode == http.StatusOK
 }
