@@ -1,7 +1,9 @@
 package main
 
-import "loadbalancer/servers"
+import (
+	"loadbalancer/loadbalancer"
+)
 
 func main() {
-	servers.RunServers(5)
+	loadbalancer.MakeLoadBalancer(5)
 }
