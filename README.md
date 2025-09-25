@@ -2,14 +2,6 @@
 
 A simple yet functional HTTP load balancer implemented in Go as a learning exercise. This project was created to explore and understand various Go concepts while building something practical.
 
-## Motivation
-
-I chose to build a load balancer because it:
-- Provides hands-on experience with Go's concurrency model
-- Involves working with Go's HTTP package and standard library
-- Requires understanding of core networking concepts
-- Offers a good balance of complexity and scope
-
 ## Key Features
 
 - **Round-Robin Load Balancing**: Simple but effective distribution of requests
