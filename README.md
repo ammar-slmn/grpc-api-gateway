@@ -17,6 +17,8 @@ I chose to build a load balancer because it:
 - **API Key Authentication**: Basic security layer for protected endpoints
 - **Dynamic Server Management**: Support for multiple backend servers
 
+![alt text](images/image.png)
+
 ## Project Structure
 
 ```
