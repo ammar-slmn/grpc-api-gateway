@@ -26,7 +26,7 @@ func (e *Endpoints) Shuffle() {
 
 func NewLoadBalancer(amount int, baseURL string) (*LoadBalancer, *Endpoints) {
 	if baseURL == "" {
-		baseURL = "http://localhost:808"
+		baseURL = "http://localhost:8080"
 	}
 
 	lb := &LoadBalancer{
